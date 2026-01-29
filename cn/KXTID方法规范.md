@@ -2,212 +2,125 @@
 
 ## 1. 引言
 
-KXTID 是一种基于国家区块链构建的去中心化标识符（DID）方法，旨在为碳数据提供安全、可信的数字身份。
+`did:kxtid`方法是一种基于区块链技术构建的去中心化标识符（DID）方法，旨在为碳数据提供安全、可信的身份标识服务。`did:kxtid`使用区块链做为可验证数据注册表（VDR）进行DID文档的存储，能有效保障数据的安全性。
 
 ## 2. DID方法名称
 
 - 注册的方法为 kxtid。
+  
 - 有效的标识符以`did:kxtid`为前缀，在前缀之后的DID剩余部分由特定的算法生成。
+  
 
 ## 3. DID语法
 
 一个`did:kxtid`的DID由方法前缀和一个可信碳的唯一标识符构成。一个有效的标识符KXTID的ABNF定义如下：
 
-
-| DID语法定义                                  |
-| ---------------------------------------------- |
+| DID语法定义 |
+| --- |
 | `did-kxtid = "did:kxtid:" kxtid-specific-id` |
-| `kxtid-specific-id = "0x" 40(pid)`           |
-| `pid = ALPHA / DIGIT`                        |
+| `kxtid-specific-id = "0x" 40(hexdig)` |
+| `hexdig = ALPHA / DIGIT` |
 
-生成KXTID标识符的步骤如下：
+`did:kxtid` 的DID是基于椭圆密码学（Elliptic Curve Cryptography，ECC）进行生成的，其具体生成步骤如下：
 
-1. 使用SM2加密算法
-2. 生成公私钥
-3. 使用Base64编码方式对公钥进行编码
-4. 使用SM3哈希算法对编码后的公钥进行哈希计算
-5. 截取哈希值的后40位字符作为位唯一标识
-6. 拼接`did:kxtid`、`0x`和唯一标识，形成完整的KXTID
+1. 选择算法：选择SM2 算法
+  
+2. 生成私钥：生成256位（32字节）随机私钥
+  
+3. 推导公钥：基于私钥推导非压缩格式的公钥（65字节，前缀为04）
+  
+4. 哈希处理：非压缩格式的公钥移除前缀`04`，并使用 SM3杂凑算法对其进行哈希计算，获得32字节的哈希值
+  
+5. 标识符拼接：取32字节哈希值的后20位字节，并将其转为40位十六进制的字符串，然后拼接`0x`前缀，从而形成完整的KXTID标识，示例：`0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b`
+  
 
-## 4. KXTID文档规范
+重要说明：
 
-### 4.1 KXTID规范说明
+1.SM2是由中国国家密码管理局制定的独立国产椭圆曲线国密标准，其对应标准为 GM/T 0003-2012（等同ECDSA secp256k1算法）
 
-KXTID文档遵循DID Document规范，并在其基础上做了一定的扩展。KXTID文档字段说明如下：
+2.SM3是由中国国家密码管理局制定的独立国产杂凑算法标准，其对应标准为GB/T 32905-2016（等同Keccak-256哈希算法）
 
-* context
-  数据类型：list<string>
-  是否必填：是
-  说明：一组解释 JSON-LD 文档的规则，遵循 DID 规范，用于实现不同 DID Document 的互操作，必须包含 https://www.w3.org/ns/did/v1。
-* version
-  数据类型：string
-  是否必填：是
-  说明：文档版本号。
-* id
-  数据类型：string
-  是否必填：是
-  说明：KXTID 文档的唯一标识符。
-* controller
-  数据类型：list<string>
-  是否必填：是
-  说明：一组KXTID，拥有对KXTID文档进行修改、删除等权限。
-* authentication
-  数据类型：list<string>
-  是否必填：是
-  说明：一组公钥的KXTID，拥有此公钥对应私钥的一方可以对KXTID文档进行控制和管理。
-* verificationMethod
-  数据类型：list<VerificationMethod>
-  是否必填：是
-  说明：一组验证方法，VerificationMethod的字段包括：
+## 4. 方法操作
 
-  * id
-    数据类型：string
-    是否必填：是
-    说明：验证方法的唯一标识。
-  * type
-    数据类型：string
-    是否必填：是
-    说明：验证方法类型。
-  * controller
-    数据类型：string
-    是否必填：是
-    说明：验证方法类型。
-  * publicKeyMultibase
-    数据类型：string
-    是否必填：否
-    说明：多基编码的公钥。
-* service
-  数据类型：list<Service>
-  是否必填：否
-  说明：一组服务地址。Service的字段包括：
+DID方法包括创建、读取、更新和停用。
 
-  * id
-    数据类型：string
-    是否必填：是
-    说明：服务地址ID。
-  * type
-    数据类型：string
-    是否必填：是
-    说明：服务类型标识。
-  * serviceEndpoint
-    数据类型：string
-    是否必填：是
-    说明：服务的访问地址。
-* proof
-  数据类型：list<Proof>
-  是否必填：否
-  说明：文档所有者对文档内容的签名。Proof的字段包括：
+### 4.1 创建（Created）
 
-  * created
-    数据类型：string
-    是否必填：是
-    说明：创建时间。
-  * proofPurpose
-    数据类型：string
-    是否必填：是
-    说明：签名目的。
-  * proofValue
-    数据类型：string
-    是否必填：是
-    说明：签名结果。
-  * type
-    数据类型：string
-    是否必填：是
-    说明：签名方法类型。
-  * verificationMethod
-    数据类型：string
-    是否必填：是
-    说明：声明用于验证签名的公钥。
-* extension
+该方法用于创建DID以及DID对应文档，并将DID存储在可验证数据注册表（VDR），即存储到区块链上。
 
-  数据类型：List<Extension>
+1.按照`did:kxtid`的DID的生成流程，生成DID；
 
-  是否必须：否
+2.使用生成的DID创建DID文档，DID文档的字段信息简要说明如下：
 
-  说明：扩展字段，额外的元数据信息。
+- 包含 `@context`、`id`、`verificationMethod` 、`authentication` 字段；
+- 可选包括`service`、`extension`、`version`、`created`和`updated`字段。
 
-  * type
+3.调用区块链的智能合约，将DID文档注册到区块链上。
 
-    数据类型：string
+重要说明：
 
-    是否必填：是
+1.该区块链为中国境内搭建的一条可信碳企业联盟链，用于企业碳数据的共享。
 
-    说明：扩展类型，自定义。
-  * values
+### 4.2 读取（Read）
 
-    数据类型：list<string>
+该方法支持通过DID解析并读取对应DID文档。
 
-    是否必填：是
+`did:kxtid`的读取是通过`KXTID解析器`服务完成的。解析器通过调用智能合约从区块链上查询DID文档，并返回给读取方。解析详情请参考第5章节。
 
-    说明：扩展类型的说明项。
-* created
-  数据类型：string
-  是否必填：是
-  说明：KXTID文档的创建时间。
-* updated
-  数据类型：string
-  是否必填：是
-  说明：KXTID文档的修改时间。
+### 4.3 更新（Update）
 
-### 4.2 KXTID文档数据结构定义
+该方法用于更新已存在的DID文档。
 
-KXTID文档数据机构定义如下：
+1.准备好待更新的DID文档（允许更新字段为：`verificationMethod`、`authentication`、`service`、`extension`、`version`、`updated`）
 
+2.根据DID调用区块链的智能合约，查找其对应的链上的DID文档
 
-| 字段                 | 数据类型 | 是否必填 | 说明                                                                                                                   |
-| ---------------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `context`            | list     | 是       | 一组解释 JSON-LD 文档的规则，遵循 DID 规范，用于实现不同 DID Document 的互操作，必须包含`https://www.w3.org/ns/did/v1` |
-| `version`            | string   | 是       | 文档版本号                                                                                                             |
-| `id`                 | string   | 是       | KXTID 文档的唯一标识符                                                                                                 |
-| `controller`         | list     | 是       | 一组KXTID，拥有对KXTID文档进行修改、删除等权限                                                                         |
-| `authentication`     | list     | 是       | 一组公钥的KXTID，拥有此公钥对应私钥的一方可以对KXTID文档进行控制和管理                                                 |
-| `verificationMethod` | list     | 是       | 一组验证方法，字段详情见下方                                                                                           |
-| `service`            | list     | 否       | 一组服务地址，字段详情见下方                                                                                           |
-| `proof`              | list     | 否       | 文档所有者对文档内容的签名，字段详情见下方                                                                             |
-| `extension`          | list     | 否       | 扩展字段，包括额外的元数据                                                                                             |
-| `created`            | string   | 是       | KXTID文档的创建时间                                                                                                    |
-| `updated`            | string   | 是       | KXTID文档的修改时间                                                                                                    |
+3.验证持有者与链上的DID文档中`controller` 和 `verificationMethod`中的`publicKeyHex` 信息是否一致
 
-#### VerificationMethod 字段说明
+重要说明：
 
+1.可通过更新 DID 文档添加新的 `verificationMethod`完成密钥轮换。新增密钥时，可保留现有密钥；若密钥泄露，可以移除旧密钥，并通过更新DID文档中`verificationMethod`字段使用新密钥。
 
-| 字段                 | 数据类型 | 是否必填 | 说明               |
-| ---------------------- | ---------- | ---------- | -------------------- |
-| `id`                 | string   | 是       | 验证方法的唯一标识 |
-| `type`               | string   | 是       | 验证方法类型       |
-| `controller`         | string   | 是       | 验证方法的控制器   |
-| `publicKeyMultibase` | string   | 否       | 多基编码的公钥     |
+### 4.4 停用（Deactivate）
 
-#### Service 字段说明
+该方法用于停用已存在的DID文档。
 
+1.根据DID调用区块链的智能合约，查找其对应的DID文档；
 
-| 字段              | 数据类型 | 是否必填 | 说明           |
-| ------------------- | ---------- | ---------- | ---------------- |
-| `id`              | string   | 是       | 服务地址ID     |
-| `type`            | string   | 是       | 服务类型标识   |
-| `serviceEndpoint` | string   | 是       | 服务的访问地址 |
+2.验证持有者与DID文档中`controller` 和 `verificationMethod`中的`publicKeyHex` 信息是否一致
 
-#### Proof 字段说明
+2.若一致，则将其DID文档为空。
 
+重要说明：
 
-| 字段                 | 数据类型 | 是否必填 | 说明                   |
-| ---------------------- | ---------- | ---------- | ------------------------ |
-| `created`            | string   | 是       | 创建时间               |
-| `proofPurpose`       | string   | 是       | 签名目的               |
-| `proofValue`         | string   | 是       | 签名结果               |
-| `type`               | string   | 是       | 签名方法类型           |
-| `verificationMethod` | string   | 是       | 声明用于验证签名的公钥 |
+1.DID文档停用后，无法被读取和更新。
 
-### 4.3 KXTID文档示例
+## 5.DID解析
 
-kxtid完整的文档示例如下所示：
+基于HTTP方式提供DID解析服务。解析通过向DID解析器发送GET请求进行解析执行。
+
+**接口地址**
+
+`GET /1.0/identifiers/{did}`
+
+**处理流程**
+
+- 调用区块链的智能合约，根据DID查询链上的DID文档
+  
+- 若找到DID文档，返回`200 OK`，并返回DID文档（格是为：`application/ld+json`）
+  
+- 若未找到DID文档，返回 `404 notFound` 错误
+  
+
+**响应说明**
+
+DID文档的示例如下所示：
 
 ```json
 {
   "@context": [
     "https://www.w3.org/ns/did/v1"
   ],
-  "version": "1.0",
   "id": "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b",
   "controller": [
     "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b"
@@ -218,61 +131,31 @@ kxtid完整的文档示例如下所示：
   "verificationMethod": [
     {
       "id": "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b#key-1",
-      "type": "Ed25519VerificationKey2018",
+      "type": "EcdsaSecp256k1VerificationKey2019",
       "controller": "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b",
-      "publicKeyMultibase": "z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"
+      "publicKeyHex": "04611176548da4a758187950dc2708a58ff7b4978c38cd9ae0961b889b74fa2f7be8592d69592bb2ffbc5315f8a563f479671ecf422d2ebd38d38c84c0d451b65c"
     }
   ],
-  "service": [
-    {
-      "id": "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b#service-1",
-      "type": "IssuerService",
-      "serviceEndpoint": "http://192.168.3.149/api/v1/query"
-    }
-  ],
-  "proof": [
-    {
-      "created": "2025-12-19T10:30:00+08:00",
-      "proofPurpose": "assertionMethod",
-      "proofValue": "MEUCIQCegqh8P+fyY+7UmUkd2FLw9Bbo8ILdGAMFwzlqrcjXNAIgfLPAXDvQgPWeQI4lLdlM2nvldEYw6DQpp/NgWn8w4pQ=",
-      "type": "Ed25519VerificationKey2018",
-      "verificationMethod": "did:kxtid:0x7e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b#key-1"
-    }
-  ],
+  "extension": {
+     "children":[
+        "did:kxtid:0x8e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d5b",
+        "did:kxtid:0x9e2f9d4c8a1b3e5f7d9c2b4a6e8f0d1e2f3c4d6b",
+     ]
+  },
+  "version": "1.0",
   "created": "2025-12-19T10:00:00+08:00",
   "updated": "2025-12-19T10:30:00+08:00"
 }
 ```
 
-## 5. 方法操作
-
-DID方法包括创建、读取、更新和停用。
-
-### 5.1 创建（Created）
-
-创建接口主要完成KXTID文档的创建，支持HTTP POST 方法。创建KXTID 文档时，proof字段的签名者需要是 authentication字段里的 公钥才有权限创建成功，如果KXTID文档存在，则不允许重复创建。
-
-### 5.2 读取（Read）
-
-读取接口主要完成KXTID文档的查询，支持HTTP GET方法。返回值为KXTID文档的 JSON 字符串。
-
-### 5.3 更新（Update）
-
-更新接口主要完成KXTID 文档的更新，支持HTTP POST 方法。更新操作不允许更新 authentication字段，更新 KXTID 文档时 proof 字段的签名者需要是 authentication字段里的 公钥才有权限更新成功。
-
-### 5.4 停用（Deactivate）
-
-停用接口主要完成对 KXTID文档停用，支持 HTTP POST方法。停用后的 KXTID文档更新为空而不是删除。
-
 ## 6. 安全和隐私
 
 ### 6.1 安全
 
-- **公钥完整性**：KXTID的公钥存储在区块链上，确保其不可篡改。
 - **私钥保护**：私钥必须安全存储，避免泄露给未经授权的第三方。
 - **防止中间人攻击**：通过加密传输（如 TLS）保护KXTID文档的传输过程。
 
 ### 6.2 隐私
 
-- **数据最小化**：仅在区块链上存储必要的信息，如公钥和服务端点，避免存储敏感信息。
+- **数据最小化**：仅在区块链上存储必要的信息，避免存储敏感信息。
 - **访问控制**：通过加密方法控制对 KXTID 及其关联服务的访问权限。
