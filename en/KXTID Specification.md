@@ -154,17 +154,60 @@ An example of a DID document is shown below:
 }
 ```
 
-## 6. Security and Privacy
+## 6. Security and Privacy Considerations
 
-### 6.1 Security
+### 6.1 Security Considerations
 
-- **Private Key Protection**: Private keys must be stored securely to avoid disclosure to unauthorized third parties.
+**Private Key Protection**:
+
+- Private keys must be stored securely to avoid leakage to unauthorized third parties, and encryption (e.g., AES/CBC encryption) is required for storage.
+
+- Private keys are used for the creation and signing of DID documents and are never included in DID documents.
+
+- Private keys must be immediately cleared from the cache after use to prevent key leakage.
+
+**Public Key Exposure**:
+
+- Public keys are stored in the `verificationMethod` field of the DID document in hexadecimal encoding format.
+
+- Public keys are public information and can be queried by anyone.
+
+- Public keys are only used for signature verification; signatures cannot be generated without the corresponding private key.
+
+**Key Rotation**:
+
+- New verification methods can be added by updating the DID document.
+
+- Existing keys can be retained while adding new keys.
+
+- If a key is leaked, the DID document can be updated to use a new key and remove the old key.
+
+**Content Protection**:
+
+- Only the DID owner holding the private key can create or update the DID document.
+
+**Transmission Security**:
+
+- The transmission process of KXTID documents is protected through encrypted transmission (e.g., TLS).
+
+### 6.2 Privacy Considerations
+
+**Data Minimization**:
+
+- DID documents only contain the minimum necessary information, such as:
   
-- **Man-in-the-Middle Attack Prevention**: Protect the transmission process of KXTID documents through encrypted transmission (such as TLS).
+  - DID identifier (`id`);
   
-
-### 6.2 Privacy
-
-- **Data Minimization**: Only store necessary information on the blockchain to avoid storing sensitive information.
+  - Public key (`verificationMethod`);
   
-- **Access Control**: Control access permissions to KXTID and its associated services through encryption methods.
+  - Authentication information (`authentication`).
+
+- No personal identity information or sensitive data is stored.
+
+- Private keys are never included in DID documents.
+
+**Access Control**:
+
+- Access permissions to KXTID and its associated services are controlled through encryption methods.
+
+- After a DID is deactivated, a `404 notFound` error is returned during resolution, making it practically unusable.
